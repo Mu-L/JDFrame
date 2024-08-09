@@ -7,6 +7,7 @@ import io.github.burukeyou.dataframe.iframe.SDFrame;
 import io.github.burukeyou.dataframe.iframe.item.FI2;
 import io.github.burukeyou.dataframe.iframe.item.FI3;
 import io.github.burukeyou.dataframe.iframe.item.FI4;
+import io.github.burukeyou.dataframe.iframe.support.JoinOn;
 import io.github.burukeyou.dataframe.iframe.support.MaxMin;
 import io.github.burukeyou.dataframe.iframe.window.Sorter;
 import io.github.burukeyou.dataframe.iframe.window.Window;
@@ -16,6 +17,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -25,14 +27,14 @@ public class JDFrameTest {
 
     static {
         studentList.add(new Student(1,"a","一中","\"生活\",日子",11, new BigDecimal(1)));
-        studentList.add(new Student(2,"a","一中","一年级",11, new BigDecimal(1)));
+        studentList.add(new Student(2,"a","一中","一年级",13, new BigDecimal(1)));
         studentList.add(new Student(3,"d","二中","一年级",14, new BigDecimal(4)));
         studentList.add(new Student(4,"b","一中","三年级",12, new BigDecimal(2)));
         studentList.add(new Student(5,"c","二中","一年级",13, new BigDecimal(3)));
         studentList.add(new Student(6,"e","三中","[\"a\",\"b\"]",14, new BigDecimal(5)));
         studentList.add(new Student(7,"e","三中","二年级",14, new BigDecimal(5)));
         studentList.add(new Student(8,"e","三中","[{\"a\":1},{\"b\":2}]",14, new BigDecimal(5)));
-        studentList.add(new Student(10,"e","三中","[爱好,奇怪，懂得]",15, new BigDecimal(5)));
+        studentList.add(new Student(10,"e","一中","[爱好,奇怪，懂得]",15, new BigDecimal(5)));
         studentList.add(new Student(11,"e","三中","二年级",15, new BigDecimal(5)));
         studentList.add(new Student(12,"e","三中","二年级",16, new BigDecimal(5)));
     }
@@ -48,7 +50,19 @@ public class JDFrameTest {
         List<Student> students3 = SDFrame.read(studentList).distinct(Student::getSchool).distinct(Student::getLevel).toLists(); // 先根据学校名去除重复再根据级别去除重复
         System.out.println();
 
+        SDFrame.read(studentList).distinct(Student::getName,(list) -> {
+            // 重复元素里选择年龄最大那个
+            return SDFrame.read(list).max(Student::getAge);
+        }).show();
 
+
+        System.out.println();
+    }
+
+
+
+    @Test
+    public void testWhere(){
         SDFrame.read(studentList)
                 .whereBetween(Student::getAge,3,6) // 过滤年龄在[3，6]岁的
                 .whereBetweenR(Student::getAge,3,6) // 过滤年龄在(3，6]岁的, 不含3岁
@@ -64,8 +78,6 @@ public class JDFrameTest {
                 .whereLike(Student::getName,"jay") // 模糊查询，等价于 like "%jay%"
                 .whereLikeLeft(Student::getName,"jay") // 模糊查询，等价于 like "jay%"
                 .whereLikeRight(Student::getName,"jay"); // 模糊查询，等价于 like "%jay"
-
-
     }
 
 
@@ -246,7 +258,7 @@ public class JDFrameTest {
         // 等价于 order by age asc
         SDFrame.read(studentList).sortAsc(Student::getAge);
         // 使用Comparator 排序
-        SDFrame.read(studentList).sortAsc(Comparator.comparing(e -> e.getLevel() + e.getId()));
+        SDFrame.read(studentList).sortAsc(java.util.Comparator.comparing(e -> e.getLevel() + e.getId()));
 
         // 等价于 select round(score*100,2) from student
         SDFrame<Student> map2 = SDFrame.read(studentList).mapPercent(Student::getScore, Student::setScore,2);
@@ -358,7 +370,11 @@ public class JDFrameTest {
         }).show();
 
         SDFrame.read(studentList).forEachDo((student) -> {
-            System.out.println("------>" + student.getName());
+            System.out.println("------>" + student.getId());
+        });
+
+        SDFrame.read(studentList).forEachParallel((student) -> {
+            System.out.println("------>>>>" + student.getId());
         });
     }
 
@@ -443,6 +459,125 @@ public class JDFrameTest {
         studentList.get(3).setUserInfoArray(new UserInfo[]{new UserInfo("哈哈",1),new UserInfo("哈哈",2)});
         studentList.get(7).setUserInfoArray(new UserInfo[]{new UserInfo("牛逼",1),new UserInfo("牛逼",2)});
         List<FI2<Student, UserInfo>> a2 = SDFrame.read(studentList).explodeCollectionArray(Student::getUserInfoArray, UserInfo.class).toLists();
+
+        System.out.println();
+    }
+
+    @Test
+    public void testforEachParallel(){
+        SDFrame.read(studentList).mapParallel(e -> {
+            System.out.println("---->" + e.getId());
+            if (e.getId() > 8){
+                return 0;
+            }
+            return e.getId();
+        }).whereNotEq(Function.identity(), 0).show();
+    }
+
+
+    @Test
+    public void testVoidJoin(){
+        SDFrame<Student> frame1 = SDFrame.read(studentList);
+
+        List<UserInfo> userInfos = Arrays.asList(new UserInfo("a", 99), new UserInfo("a", 4), new UserInfo("b", 4));
+        SDFrame<UserInfo> frame2 = SDFrame.read(userInfos);
+
+        frame1.leftJoinVoid(frame2,(a, b) -> a.getName().equals(b.getKey1()),(a, b) -> {
+            if (b == null){
+                return;
+            }
+            log.info("id【{}】name【{}】对应的key【{}】",a.getId(),a.getName(),b.getKey2());
+        });
+
+        System.out.println("===========");
+
+        JoinOn<Student, UserInfo> joinOn = JoinOn.on(Student::getName, UserInfo::getKey1).thenOn(Student::getId, UserInfo::getKey2);
+        frame1.leftJoinVoid(frame2,joinOn,(stu, user) -> {
+            if (user == null){
+                // 未关联上
+                return;
+            }
+            // 关联上了
+            log.info("name【{}】对应的key【{}】",stu.getName(),user.getKey2());
+        });
+    }
+
+
+    /**
+     *  Once：
+     *      在SQL语言里默认的join语义是： 主表一条记录可能会关联副表多条记录。
+     *      而Once就是只会关联其中一个。
+     *
+     *  Void：
+     *      只是执行连结操作的回调。不会改变Frame的数据和行数
+     */
+    @Test
+    public void testJoinOnce(){
+        SDFrame<Student> frame1 = SDFrame.read(studentList);
+        List<UserInfo> userInfos = Arrays.asList(new UserInfo("a", 99), new UserInfo("a", 4), new UserInfo("b", 4));
+        SDFrame<UserInfo> frame2 = SDFrame.read(userInfos);
+        frame1.leftJoinOnceVoid(frame2,(a, b) -> a.getName().equals(b.getKey1()),(a, b) -> {
+            if (b == null){
+                return;
+            }
+            log.info("id【{}】name【{}】对应的key【{}】",a.getId(),a.getName(),b.getKey2());
+        }).show();
+
+    }
+
+
+
+
+    @Test
+    public void testOper(){
+
+        List<UserInfo> us1 = Arrays.asList(new UserInfo("a", 99), new UserInfo("a", 99),new UserInfo("a", 4), new UserInfo("b", 4));
+        List<UserInfo> us2 = Arrays.asList(new UserInfo("a", 99), new UserInfo("b", 4), new UserInfo("c", 4));
+
+        SDFrame<UserInfo> frame = SDFrame.read(us1);
+        SDFrame<UserInfo> frame2 = SDFrame.read(us2);
+
+        System.out.println("----- 并集(不去重)------");
+        frame.unionAll(frame2).show();
+
+        frame.show();
+
+        System.out.println("----- 并集(去重)------");
+        frame.union(frame2).show();
+
+
+        System.out.println("----- 交集------");
+        frame.intersection(frame2).show();
+
+        System.out.println("----- retainAll------");
+        frame.retainAll(frame2).show();
+
+        System.out.println("----- 差集------");
+        frame.different(frame2).show();
+
+        frame.show();
+
+    }
+
+    @Test
+    public void testOper2(){
+        List<UserInfo> us1 = Arrays.asList(new UserInfo("a", 1,"99"), new UserInfo("a", 2,"99"),new UserInfo("c",3,"88"), new UserInfo("b", 4,"77"));
+        List<UserInfo> us2 = Arrays.asList(new UserInfo("a", 5,"99"), new UserInfo("b",6,"77"), new UserInfo("c", 7,"4"));
+
+        SDFrame<UserInfo> frame1 = SDFrame.read(us1);
+        SDFrame<UserInfo> frame2 = SDFrame.read(us2);
+
+        System.out.println("------- 并集 -----");
+        frame1.union(frame2, Comparator.comparing(UserInfo::getKey1).thenComparing(UserInfo::getKey3)).show();
+
+        System.out.println("------- 交集 -----");
+        frame1.intersection(frame2, Comparator.comparing(UserInfo::getKey1).thenComparing(UserInfo::getKey3)).show();
+
+        System.out.println("------- retainAll -----");
+        frame1.retainAll(frame2, Comparator.comparing(UserInfo::getKey1).thenComparing(UserInfo::getKey3)).show();
+
+        System.out.println("------- 差集 -----");
+        frame1.different(frame2, Comparator.comparing(UserInfo::getKey1).thenComparing(UserInfo::getKey3)).show();
 
         System.out.println();
     }

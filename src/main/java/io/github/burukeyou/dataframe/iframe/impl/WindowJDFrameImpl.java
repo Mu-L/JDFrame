@@ -1,5 +1,6 @@
-package io.github.burukeyou.dataframe.iframe;
+package io.github.burukeyou.dataframe.iframe.impl;
 
+import io.github.burukeyou.dataframe.iframe.WindowJDFrame;
 import io.github.burukeyou.dataframe.iframe.function.SetFunction;
 import io.github.burukeyou.dataframe.iframe.item.FI2;
 import io.github.burukeyou.dataframe.iframe.window.Window;
@@ -32,7 +33,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overRowNumberS(SetFunction<T, Integer> setFunction) {
-        return returnWDF(this.window, overRowNumberS(setFunction, this.window).toLists());
+        return returnWDF(this.window, overRowNumberS(setFunction, this.window).viewList());
     }
 
     @Override
@@ -42,7 +43,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overRankS(SetFunction<T, Integer> setFunction) {
-        return returnWDF(this.window, overRankS(setFunction, this.window).toLists());
+        return returnWDF(this.window, overRankS(setFunction, this.window).viewList());
     }
 
     @Override
@@ -52,7 +53,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overDenseRankS(SetFunction<T, Integer> setFunction) {
-        return returnWDF(this.window, overDenseRankS(setFunction, this.window).toLists());
+        return returnWDF(this.window, overDenseRankS(setFunction, this.window).viewList());
     }
 
     @Override
@@ -62,7 +63,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overPercentRankS(SetFunction<T, BigDecimal> setFunction) {;
-        return returnWDF(this.window, overPercentRankS(setFunction, this.window).toLists());
+        return returnWDF(this.window, overPercentRankS(setFunction, this.window).viewList());
     }
 
     @Override
@@ -72,7 +73,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overCumeDistS(SetFunction<T, BigDecimal> setFunction) {
-        return returnWDF(this.window, overCumeDistS(setFunction, this.window).toLists());
+        return returnWDF(this.window, overCumeDistS(setFunction, this.window).viewList());
     }
 
     @Override
@@ -82,7 +83,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F> WindowJDFrameImpl<T> overLagS(SetFunction<T, F> setFunction, Function<T, F> field, int n) {
-        return returnWDF(this.window,super.overLagS(setFunction, this.window,field, n).toLists());
+        return returnWDF(this.window,super.overLagS(setFunction, this.window,field, n).viewList());
     }
 
     @Override
@@ -91,8 +92,8 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
     }
 
     @Override
-    public <F> WindowJDFrame<T> overLeadS(SetFunction<T,F> setFunction,Function<T,F> field, int n){
-        return returnWDF(this.window,super.overLeadS(setFunction, this.window,field, n).toLists());
+    public <F> WindowJDFrameImpl<T> overLeadS(SetFunction<T,F> setFunction,Function<T,F> field, int n){
+        return returnWDF(this.window,super.overLeadS(setFunction, this.window,field, n).viewList());
     }
 
     @Override
@@ -102,12 +103,12 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F> WindowJDFrameImpl<T> overNthValueS(SetFunction<T, F> setFunction, Function<T, F> field, int n) {
-        return returnWDF(this.window,super.overNthValueS(setFunction, this.window,field, n).toLists());
+        return returnWDF(this.window,super.overNthValueS(setFunction, this.window,field, n).viewList());
     }
 
     @Override
     public <F> WindowJDFrameImpl<T> overFirstValueS(SetFunction<T, F> setFunction, Function<T, F> field) {
-        return returnWDF(this.window,super.overFirstValueS(setFunction, this.window,field).toLists());
+        return returnWDF(this.window,super.overFirstValueS(setFunction, this.window,field).viewList());
     }
 
     @Override
@@ -122,7 +123,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F> WindowJDFrameImpl<T> overLastValueS(SetFunction<T, F> setFunction, Function<T, F> field) {
-        return returnWDF(this.window,super.overLastValueS(setFunction, this.window,field).toLists());
+        return returnWDF(this.window,super.overLastValueS(setFunction, this.window,field).viewList());
     }
 
     @Override
@@ -132,7 +133,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F> WindowJDFrameImpl<T> overSumS(SetFunction<T, BigDecimal> setFunction, Function<T, F> field) {
-        return returnWDF(this.window, overSumS(setFunction, this.window,field).toLists());
+        return returnWDF(this.window, overSumS(setFunction, this.window,field).viewList());
     }
 
     @Override
@@ -142,7 +143,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F> WindowJDFrameImpl<T> overAvgS(SetFunction<T, BigDecimal> setFunction, Function<T, F> field) {
-        return returnWDF(this.window, overAvgS(setFunction, this.window, field).toLists());
+        return returnWDF(this.window, overAvgS(setFunction, this.window, field).viewList());
     }
 
     @Override
@@ -152,7 +153,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F extends Comparable<? super F>> WindowJDFrameImpl<T> overMaxValueS(SetFunction<T, F> setFunction, Function<T, F> field) {
-        return returnWDF(this.window, overMaxValueS(setFunction, this.window, field).toLists());
+        return returnWDF(this.window, overMaxValueS(setFunction, this.window, field).viewList());
     }
 
     @Override
@@ -162,7 +163,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public <F extends Comparable<? super F>> WindowJDFrameImpl<T> overMinValueS(SetFunction<T, F> setFunction, Function<T, F> field) {
-        return returnWDF(this.window, overMinValueS(setFunction,this.window,field).toLists());
+        return returnWDF(this.window, overMinValueS(setFunction,this.window,field).viewList());
     }
 
     @Override
@@ -172,7 +173,7 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overCountS(SetFunction<T, Integer> setFunction) {
-        return returnWDF(this.window, overCountS(setFunction,this.window).toLists());
+        return returnWDF(this.window, overCountS(setFunction,this.window).viewList());
     }
 
     @Override
@@ -182,6 +183,6 @@ public class WindowJDFrameImpl<T> extends JDFrameImpl<T> implements WindowJDFram
 
     @Override
     public WindowJDFrameImpl<T> overNtileS(SetFunction<T, Integer> setFunction, int n) {
-        return returnWDF(this.window,super.overNtileS(setFunction, n).toLists());
+        return returnWDF(this.window,super.overNtileS(setFunction, n).viewList());
     }
 }

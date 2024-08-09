@@ -1,5 +1,6 @@
-package io.github.burukeyou.dataframe.iframe;
+package io.github.burukeyou.dataframe.iframe.impl;
 
+import io.github.burukeyou.dataframe.iframe.SDFrame;
 import io.github.burukeyou.dataframe.iframe.item.FI2;
 import io.github.burukeyou.dataframe.iframe.window.SupplierFunction;
 import io.github.burukeyou.dataframe.iframe.window.Window;
@@ -31,7 +32,7 @@ public abstract class AbstractWindowDataFrame<T> extends AbstractCommonFrame<T>{
     protected  <V> List<FI2<T, V>> overAbject(Window<T> overParam,
                                               SupplierFunction<T,V> supplier) {
         ((WindowBuilder<T>)overParam).initDefault();
-        List<T> windowList = toLists();
+        List<T> windowList = viewList();
         List<FI2<T, V>> result = new ArrayList<>();
         if (ListUtils.isEmpty(windowList)){
             return result;

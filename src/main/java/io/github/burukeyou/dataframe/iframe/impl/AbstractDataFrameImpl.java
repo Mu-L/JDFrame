@@ -1,8 +1,10 @@
-package io.github.burukeyou.dataframe.iframe;
+package io.github.burukeyou.dataframe.iframe.impl;
 
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import io.github.burukeyou.dataframe.iframe.IFrame;
+import io.github.burukeyou.dataframe.iframe.function.ListToOneFunction;
 import io.github.burukeyou.dataframe.iframe.function.ReplenishFunction;
 import io.github.burukeyou.dataframe.iframe.function.SetFunction;
 import io.github.burukeyou.dataframe.iframe.item.FI2;
@@ -11,6 +13,7 @@ import io.github.burukeyou.dataframe.iframe.item.FI4;
 import io.github.burukeyou.dataframe.iframe.support.Join;
 import io.github.burukeyou.dataframe.iframe.support.JoinOn;
 import io.github.burukeyou.dataframe.iframe.support.MaxMin;
+import io.github.burukeyou.dataframe.iframe.support.VoidJoin;
 import io.github.burukeyou.dataframe.util.BeanCopyUtil;
 import io.github.burukeyou.dataframe.util.CollectorsPlusUtil;
 import io.github.burukeyou.dataframe.util.FrameUtil;
@@ -43,7 +46,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public T[] toArray() {
-        List<T> ts = toLists();
+        List<T> ts = viewList();
         if (ts.isEmpty() && fieldClass == null){
             // 为空拿不到泛型先返回null
             return null;
@@ -57,7 +60,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public T[] toArray(Class<T> elementClass) {
-        List<T> ts = toLists();
+        List<T> ts = viewList();
         if (ts == null || ts.isEmpty()) {
             return (T[]) Array.newInstance(elementClass, 0);
         }
@@ -70,7 +73,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public boolean contains(T other) {
-        return toLists().contains(other);
+        return viewList().contains(other);
     }
 
     @Override
@@ -107,7 +110,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
     @Override
     public <K, V> Map<K, V> toMap(Function<? super T, ? extends K> keyMapper, Function<? super T, ? extends V> valueMapper) {
         // 原生stream 的 toMap存在两个问题。 1-value不能为null否则空指针异常 2-不能重复key，否则 Duplicate key 异常所以宁愿手写
-        List<T> list = toLists();
+        List<T> list = viewList();
         if (ListUtils.isEmpty(list)){
             return Collections.emptyMap();
         }
@@ -339,25 +342,25 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
     }
 
     public <R extends Comparable<? super R>> R maxValue(Function<T, R> function) {
-        Optional<R> value = stream().map(function).filter(Objects::nonNull).max(Comparator.comparing(e -> e));
+        Optional<R> value = stream().map(function).filter(Objects::nonNull).max(java.util.Comparator.comparing(e -> e));
         return value.orElse(null);
     }
 
 
     public <R extends Comparable<R>> T max(Function<T, R> function) {
-        Optional<T> max = stream().filter(e -> function.apply(e) != null).max(Comparator.comparing(function));
+        Optional<T> max = stream().filter(e -> function.apply(e) != null).max(java.util.Comparator.comparing(function));
         return max.orElse(null);
     }
 
 
     public <R extends Comparable<? super R>> R minValue(Function<T, R> function) {
-        Optional<R> value = stream().map(function).filter(Objects::nonNull).min(Comparator.comparing(e -> e));
+        Optional<R> value = stream().map(function).filter(Objects::nonNull).min(java.util.Comparator.comparing(e -> e));
         return value.orElse(null);
     }
 
 
     public <R extends Comparable<R>> T min(Function<T, R> function) {
-        Optional<T> min = stream().filter(e -> function.apply(e) != null).min(Comparator.comparing(function));
+        Optional<T> min = stream().filter(e -> function.apply(e) != null).min(java.util.Comparator.comparing(function));
         return min.orElse(null);
     }
 
@@ -423,11 +426,11 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
     }
 
     protected  <V extends Comparable<? super V>> Function<List<T>, T> getListMaxFunction(Function<T, V> value) {
-        return e -> e.stream().filter(a ->  value.apply(a) != null).max(Comparator.comparing(value)).orElse(null);
+        return e -> e.stream().filter(a ->  value.apply(a) != null).max(java.util.Comparator.comparing(value)).orElse(null);
     }
 
     protected  <V extends Comparable<? super V>> Function<List<T>, T> getListMinFunction(Function<T, V> value) {
-        return e -> e.stream().min(Comparator.comparing(value)).orElse(null);
+        return e -> e.stream().min(java.util.Comparator.comparing(value)).orElse(null);
     }
 
     protected <V extends Comparable<? super V>> Function<List<T>, MaxMin<V>> getListGroupMaxMinValueFunction(Function<T, V> value) {
@@ -436,8 +439,8 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
                 return null;
             }
             MaxMin<V> maxMin = new MaxMin<>();
-            maxMin.setMax(list.stream().max(Comparator.comparing(value)).map(value).orElse(null));
-            maxMin.setMin(list.stream().min(Comparator.comparing(value)).map(value).orElse(null));
+            maxMin.setMax(list.stream().max(java.util.Comparator.comparing(value)).map(value).orElse(null));
+            maxMin.setMin(list.stream().min(java.util.Comparator.comparing(value)).map(value).orElse(null));
             return maxMin;
         };
     }
@@ -448,8 +451,8 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
                 return new MaxMin<>();
             }
             MaxMin<T> maxMin = new MaxMin<>();
-            maxMin.setMax(list.stream().max(Comparator.comparing(value)).orElse(null));
-            maxMin.setMin(list.stream().min(Comparator.comparing(value)).orElse(null));
+            maxMin.setMax(list.stream().max(java.util.Comparator.comparing(value)).orElse(null));
+            maxMin.setMin(list.stream().min(java.util.Comparator.comparing(value)).orElse(null));
             return maxMin;
         };
     }
@@ -461,7 +464,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public Iterator<T> iterator() {
-        return toLists().iterator();
+        return viewList().iterator();
     }
 
 
@@ -473,7 +476,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public <R> List<R> col(Function<T, R> function) {
-        return toLists().stream().map(function).collect(toList());
+        return viewList().stream().map(function).collect(toList());
     }
 
     @Override
@@ -491,17 +494,17 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
             return Collections.emptyList();
         }
         int endIndex = Math.min(startIndex + pageSize, count);
-        return toLists().subList(startIndex, endIndex);
+        return viewList().subList(startIndex, endIndex);
     }
 
     @Override
     public String toString() {
-        return getShowString(10).toString();
+        return getShowString(15).toString();
     }
 
     @Override
     public void show(){
-        show(10);
+        show(15);
     }
 
     @Override
@@ -510,39 +513,79 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
         System.out.println(sb);
     }
 
-    private StringBuilder getShowString(int n) {
-        String[][] dataArr = buildPrintDataArr(n);
-        if (dataArr == null || dataArr.length <= 0){
-            return new StringBuilder("\n");
+
+
+    protected List<T> distinctList(List<T> dataList, java.util.Comparator<T> comparator, ListToOneFunction<T> function){
+        if (ListUtils.isEmpty(dataList) || dataList.size() == 1){
+            return dataList;
         }
-        StringBuilder sb = new StringBuilder("\n");
-        for (int i = 0; i < dataArr.length; i++) {
-            for (int j = 0; j < dataArr[0].length; j++) {
-                sb.append(dataArr[i][j].replace(MSG, "\t"));
+        TreeMap<T,List<T>> treeMap = new TreeMap<>(comparator);
+        for (T t : dataList) {
+            treeMap.putIfAbsent(t,new ArrayList<>());
+            List<T> tmpList = treeMap.get(t);
+            tmpList.add(t);
+        }
+        return treeMap.values().stream().map(list -> {
+            if (list.size() == 1){
+                return list.get(0);
             }
-        }
-        return sb;
+            return function.apply(list);
+        }).collect(toList());
     }
 
 
+    /**  ========================================= Join ========================================= */
+
     protected  <R, K> List<R> joinList(IFrame<K> other, JoinOn<T, K> on, Join<T, K, R> join) {
+        return joinList(other,on,join,false);
+    }
+
+    protected  <R, K> List<R> joinList(IFrame<K> other, JoinOn<T, K> on, Join<T, K, R> join,boolean isJoinOnce) {
         List<R> resultList = new ArrayList<>();
         for (T cur :this){
             for (K k : other) {
                 if(on.on(cur,k)){
                     resultList.add(join.join(cur,k));
+                    if (isJoinOnce){
+                        break;
+                    }
                 }
             }
         }
         return resultList;
     }
 
+
+    protected  <K> void joinListLink(IFrame<K> other, JoinOn<T, K> on, VoidJoin<T, K> join) {
+        joinListLink(other,on,join,false);
+    }
+
+    protected  <K> void joinListLink(IFrame<K> other, JoinOn<T, K> on, VoidJoin<T, K> join,boolean isJoinOnce) {
+        for (T cur :this){
+            for (K k : other) {
+                if(on.on(cur,k)){
+                    join.join(cur,k);
+                    if (isJoinOnce){
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     protected  <R, K> List<R> leftJoinList(IFrame<K> other, JoinOn<T, K> on, Join<T, K, R> join) {
+       return leftJoinList(other,on,join,false);
+    }
+
+    protected  <R, K> List<R> leftJoinList(IFrame<K> other, JoinOn<T, K> on, Join<T, K, R> join, boolean isJoinOnce) {
         List<R> resultList = new ArrayList<>();
         for (T cur :this){
             for (K k : other) {
                 if(on.on(cur,k)){
                     resultList.add(join.join(cur,k));
+                    if (isJoinOnce){
+                        break;
+                    }
                 }else {
                     resultList.add(join.join(cur,null));
                 }
@@ -551,12 +594,39 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
         return resultList;
     }
 
+
+    protected  <K> void leftJoinListLink(IFrame<K> other, JoinOn<T, K> on, VoidJoin<T, K> join) {
+        leftJoinListLink(other,on,join,false);
+    }
+
+    protected  <K> void leftJoinListLink(IFrame<K> other, JoinOn<T, K> on, VoidJoin<T, K> join, boolean isJoinOnce) {
+        for (T cur :this){
+            for (K k : other) {
+                if(on.on(cur,k)){
+                    join.join(cur,k);
+                    if (isJoinOnce){
+                        break;
+                    }
+                }else {
+                    join.join(cur,null);
+                }
+            }
+        }
+    }
+
     protected  <R, K> List<R> rightJoinList(IFrame<K> other, JoinOn<T, K> on, Join<T, K, R> join) {
+       return rightJoinList(other,on,join,false);
+    }
+
+    protected  <R, K> List<R> rightJoinList(IFrame<K> other, JoinOn<T, K> on, Join<T, K, R> join,boolean isJoinOnce) {
         List<R> resultList = new ArrayList<>();
         for (K k : other) {
             for (T cur :this){
                 if(on.on(cur,k)){
                     resultList.add(join.join(cur,k));
+                    if (isJoinOnce){
+                        break;
+                    }
                 }else {
                     resultList.add(join.join(null,k));
                 }
@@ -565,9 +635,31 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
         return resultList;
     }
 
+    protected  <K> void rightJoinListLink(IFrame<K> other, JoinOn<T, K> on, VoidJoin<T, K> join) {
+        rightJoinListLink(other,on,join,false);
+    }
+
+    protected  <K> void rightJoinListLink(IFrame<K> other, JoinOn<T, K> on, VoidJoin<T, K> join,boolean isJoinOnce) {
+        for (K k : other) {
+            for (T cur :this){
+                if(on.on(cur,k)){
+                    join.join(cur,k);
+                    if (isJoinOnce){
+                        break;
+                    }
+                }else {
+                    join.join(null,k);
+                }
+            }
+        }
+    }
+
+    /** ===========================   View Frame  ===================================== **/
+
+
     @Override
     public List<T> head(int n) {
-        List<T> tsList = toLists();
+        List<T> tsList = viewList();
         if (tsList.isEmpty()){
             return Collections.emptyList();
         }
@@ -580,7 +672,7 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public List<T> tail(int n) {
-        List<T> tsList = toLists();
+        List<T> tsList = viewList();
         if (tsList.isEmpty()){
             return Collections.emptyList();
         }
@@ -594,19 +686,19 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
 
     @Override
     public T head() {
-        List<T> ts = toLists();
+        List<T> ts = viewList();
         return ts.isEmpty() ? null : ts.get(0);
     }
 
     @Override
     public T tail() {
-        List<T> ts = toLists();
+        List<T> ts = viewList();
         return ts.isEmpty() ? null : ts.get(ts.size()-1);
     }
 
     @Override
-    public List<T> subList(Integer startIndex, Integer endIndex) {
-        List<T> ts = toLists();
+    public List<T> getList(Integer startIndex, Integer endIndex) {
+        List<T> ts = viewList();
         if (startIndex == null || startIndex < 0){
             startIndex = 0;
         }
@@ -615,6 +707,92 @@ public abstract class AbstractDataFrameImpl<T> extends AbstractWindowDataFrame<T
         }
         return ts.subList(startIndex,endIndex);
     }
+
+    protected List<T> unionList(List<T> leftList,Collection<T> rightList){
+        if (ListUtils.isEmpty(rightList)){
+            return leftList;
+        }
+        if (ListUtils.isEmpty(leftList)){
+            return new ArrayList<>(rightList);
+        }
+        Set<T> set = new HashSet<>(leftList);
+        set.addAll(rightList);
+        return new ArrayList<>(set);
+    }
+
+    protected List<T> unionList(List<T> leftList, Collection<T> rightList, Comparator<T> comparator){
+        if (ListUtils.isEmpty(rightList)){
+            return leftList;
+        }
+        if (ListUtils.isEmpty(leftList)){
+            return new ArrayList<>(rightList);
+        }
+        TreeSet<T> set = new TreeSet<>(comparator);
+        set.addAll(leftList);
+        set.addAll(rightList);
+        return new ArrayList<>(set);
+    }
+
+    protected List<T> retainAllList(List<T> leftList, Collection<T> rightList){
+        if (ListUtils.isEmpty(rightList)){
+            return Collections.emptyList();
+        }
+        Set<T> set = new HashSet<>(rightList);
+        return leftList.stream().filter(set::contains).collect(toList());
+    }
+
+    protected List<T> retainAllList(List<T> leftList, Collection<T> rightList, Comparator<T> comparator){
+        if (ListUtils.isEmpty(rightList)){
+            return Collections.emptyList();
+        }
+        Set<T> set = new TreeSet<>(comparator);
+        set.addAll(rightList);
+        return leftList.stream().filter(set::contains).collect(toList());
+    }
+
+    protected List<T> intersectionList(List<T> leftList, Collection<T> rightList){
+        if (ListUtils.isEmpty(leftList) || ListUtils.isEmpty(rightList)){
+            return Collections.emptyList();
+        }
+
+        Set<T> set = new HashSet<>(rightList);
+        return leftList.stream().filter(set::contains).distinct().collect(Collectors.toList());
+    }
+
+    protected List<T> intersectionList(List<T> leftList, Collection<T> rightList, Comparator<T> comparator){
+        if (ListUtils.isEmpty(leftList) || ListUtils.isEmpty(rightList)){
+            return Collections.emptyList();
+        }
+        TreeSet<T> set = new TreeSet<>(comparator);
+        set.addAll(rightList);
+        return leftList.stream().filter(set::contains).distinct().collect(Collectors.toList());
+    }
+
+    protected List<T> differentList(List<T> leftList, Collection<T> rightList) {
+        if (ListUtils.isEmpty(leftList)){
+            return leftList;
+        }
+        if (ListUtils.isEmpty(rightList)){
+            return leftList;
+        }
+        Set<T> otherSet = new HashSet<>(rightList);
+        leftList = leftList.stream().filter(e -> !otherSet.contains(e)).collect(toList());
+        return leftList;
+    }
+
+    protected List<T> differentList(List<T> leftList, Collection<T> rightList, Comparator<T> comparator) {
+        if (ListUtils.isEmpty(leftList)){
+            return leftList;
+        }
+        if (ListUtils.isEmpty(rightList)){
+            return leftList;
+        }
+        Set<T> otherSet = new TreeSet<>(comparator);
+        otherSet.addAll(rightList);
+        leftList = leftList.stream().filter(e -> !otherSet.contains(e)).collect(toList());
+        return leftList;
+    }
+
 
     protected static <T, C> List<T> replenish(List<T> itemDTOList,
                                               Function<T, C> collectDim,
